@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Satio CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: barra de cabecera con cifras clave, pestañas, y una vista de trabajo (tablero por estado / tabla / cobros / clientes) con panel lateral de ficha */
+:root{
+  --bg:#f3f4ef; --surface:#ffffff; --sunk:#e9ebe3; --line:#d5d9cc; --fg:#1d231b; --muted:#5d6656;
+  --accent:#2f6b3a; --accent-fg:#ffffff; --straw:#b8860b;
+  --lead:#6b5bb5; --pend:#b7791f; --env:#2b6cb0; --entr:#2f855a; --inst:#4a5a45; --dev:#c0392b;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141812; --surface:#1c2119; --sunk:#232920; --line:#343c30; --fg:#e7ebe1; --muted:#9ba592;
+  --accent:#6fbf7c; --accent-fg:#0f1a10; --straw:#e0b44a;
+  --lead:#a597ea; --pend:#e4a94a; --env:#6aa6e6; --entr:#65c08e; --inst:#a8b8a2; --dev:#ef7b6d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141812; --surface:#1c2119; --sunk:#232920; --line:#343c30; --fg:#e7ebe1; --muted:#9ba592;
+  --accent:#6fbf7c; --accent-fg:#0f1a10; --straw:#e0b44a;
+  --lead:#a597ea; --pend:#e4a94a; --env:#6aa6e6; --entr:#65c08e; --inst:#a8b8a2; --dev:#ef7b6d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45}
+.wrap{max-width:1400px;margin:0 auto;padding-inline:16px;padding-block:18px 60px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.01em;margin:0;line-height:1}
+h1 small{display:block;font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:8px 14px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--dev)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.card:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-block:18px}
+.kpi{background:var(--surface);padding:12px 14px}
+.kpi b{display:block;font-family:var(--display);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.kpi.warn b{color:var(--pend)}
+nav.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+nav.tabs button{font:inherit;font-family:var(--display);font-size:18px;font-weight:600;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:6px 12px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-color:var(--accent)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
+.toolbar input{flex:1 1 220px}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:10px;overflow-x:auto;padding-bottom:8px}
+.col{background:var(--sunk);border-radius:8px;padding:8px;min-width:0;display:flex;flex-direction:column;gap:6px;max-height:70vh;overflow-y:auto}
+.col h3{font-family:var(--display);font-size:17px;font-weight:600;margin:2px 4px 4px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.col h3 i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.col h3::before{content:"";width:10px;height:10px;border-radius:2px;background:var(--c);flex:none}
+.col h3 span{flex:1}
+.card{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:6px;padding:8px 10px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.card:hover{border-color:var(--c)}
+.card .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.card .who{font-weight:600}
+.card .meta{font-size:12px;color:var(--muted)}
+.card .pz{font-family:var(--mono);font-size:12px;color:var(--straw);margin-top:2px}
+.card .pz.falta{color:var(--dev)}
+.col h3 small{display:block;font-family:var(--body);font-size:11px;font-weight:400;color:var(--muted);letter-spacing:.02em}
+.piezas{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:13px}
+.chip{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 8px;background:var(--sunk)}
+.chip{cursor:default;color:var(--fg);font-family:var(--mono)}
+button.chip{cursor:pointer}
+.tag.mont{color:var(--env);border-color:var(--env)}
+.tag.falta{color:var(--dev);border-color:var(--dev)}
+.chip i{font-style:normal;color:var(--straw);font-weight:500}
+.neto{font-family:var(--mono);font-size:11px;text-transform:none;letter-spacing:0;color:var(--muted)}
+.bar.wide{grid-template-columns:70px 1fr 80px}
+.card .debe{font-family:var(--mono);font-size:12px;color:var(--pend);font-weight:500}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);margin-right:4px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;background:var(--sunk);position:sticky;top:0}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--sunk)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+[data-e="Lead"]{--c:var(--lead)}[data-e="Pendiente"]{--c:var(--pend)}[data-e="Enviado"]{--c:var(--env)}[data-e="Entregado"]{--c:var(--entr)}[data-e="Instalado"]{--c:var(--inst)}[data-e="Devuelto"]{--c:var(--dev)}
+/* ficha */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10}
+aside.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:11;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 18px calc(24px + env(safe-area-inset-bottom,0px))}
+.drawer h2{font-family:var(--display);font-size:26px;margin:0 0 2px;text-wrap:balance}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-block:14px}
+.grid2 label{display:flex;flex-direction:column;gap:3px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:0}
+.grid2 label.full{grid-column:1/-1}
+.grid2 input,.grid2 select,.grid2 textarea{font-size:14px;text-transform:none;letter-spacing:0}
+.checks{display:flex;flex-wrap:wrap;gap:14px;grid-column:1/-1;font-size:13px}
+.checks label{flex-direction:row;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg)}
+.docs{list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:6px}
+.docs li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+.docs li.muted{border-style:dashed}
+.btn.sm{padding:3px 9px;font-size:12px;text-decoration:none}
+.addrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:6px}
+.addrow input,.addrow select{font-size:13px}
+.file{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:6px;padding:4px 8px;min-width:0}
+.file input{border:0;padding:0;font-size:11px;min-width:0;width:100%}
+.hist{list-style:none;padding:0;margin:8px 0;border-left:2px solid var(--line)}
+.hist li{padding:4px 0 8px 12px;position:relative;font-size:13px}
+.hist li::before{content:"";position:absolute;left:-5px;top:9px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.hist .d{font-family:var(--mono);font-size:11px;color:var(--muted);display:block}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.drawer h4{font-family:var(--display);font-size:17px;margin:18px 0 4px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:6px;z-index:20;font-weight:500}
+.banner{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.bars{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.bars h4{margin:0 0 4px;font-family:var(--display);font-size:17px}
+.bar{display:grid;grid-template-columns:110px 1fr 44px;gap:8px;align-items:center;font-size:12px}
+.bar div{height:10px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar div span{display:block;height:100%;background:var(--accent)}
+.bar em{font-style:normal;font-family:var(--mono);text-align:right;color:var(--muted)}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}.board{grid-auto-columns:minmax(78vw,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.login{max-width:380px;margin:12vh auto 0;padding:0 16px}
+.login form{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.login p{color:var(--muted)}
+.user{font-family:var(--mono);font-size:12px;color:var(--muted)}
+</style>
+<style>body{margin:0}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="login" id="login" hidden>
+  <h1>Satio CRM<small>Acceso privado</small></h1>
+  <form id="fLogin">
+    <label for="lEmail">Tu email</label>
+    <input id="lEmail" type="email" autocomplete="email" required placeholder="tu@satiotech.com">
+    <button class="btn primary" type="submit">Enviarme el enlace de acceso</button>
+  </form>
+  <p id="lMsg"></p>
+</div>
+
+
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <h1>Satio CRM<small>Autoguiado · ventas, envíos y cobros</small></h1>
+    <div class="row"><span class="user" id="quien"></span><button class="btn" id="btnSalir">Salir</button><button class="btn" id="btnLead">+ Lead</button><button class="btn primary" id="btnNueva">+ Nueva venta</button></div>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Resumen"></section>
+  <div class="banner" id="aviso" hidden></div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="tablero" aria-selected="true">Tablero</button>
+    <button role="tab" data-tab="ventas" aria-selected="false">Ventas</button>
+    <button role="tab" data-tab="cobros" aria-selected="false">Cobros</button>
+    <button role="tab" data-tab="clientes" aria-selected="false">Clientes</button>
+    <button role="tab" data-tab="cifras" aria-selected="false">Cifras</button>
+  </nav>
+
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Buscar nombre, pueblo, marca, nº factura, localizador o tracking…" aria-label="Buscar">
+    <select id="fProv" aria-label="Provincia"><option value="">Todas las provincias</option></select>
+    <select id="fMarca" aria-label="Marca"><option value="">Todas las marcas</option></select>
+    <label class="row" style="font-size:13px"><input type="checkbox" id="fOcultarInst" checked> Ocultar instalados antiguos</label>
+  </div>
+
+  <main id="vista"><div class="empty" id="cargando">Cargando ventas… Si tarda, las ventas aparecerán aquí en cuanto la base de datos responda.</div></main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Ficha de venta"></aside>
+<div class="toast" id="toast" hidden></div>
+
+
+<script>
+
+const ESTADOS=["Lead","Pendiente","Enviado","Entregado","Instalado","Devuelto"];
+const IVA=1.21;
+const neto=v=>(Number(v.precio)||0)/IVA;
+const pieza=v=>v.diametro||v.dientes?`Ø${v.diametro||"?"} · ${v.dientes||"?"} dientes`:"";
+const esMontaje=v=>v.entrega==="Montaje";
+const entregaTxt=v=>esMontaje(v)?`Montaje${v.montajeFecha?" "+fmtF(v.montajeFecha).slice(0,5):" sin día"}${v.montajePrecio?" · montador "+eur(v.montajePrecio):""}`:"Envío";
+const facs=v=>Array.isArray(v.facturas)?v.facturas:(v.factura?[{numero:v.factura}]:[]);
+const envs=v=>Array.isArray(v.envios)?v.envios:(v.seguimiento?[{tracking:v.seguimiento}]:[]);
+const trackUrl=e=>e.url||(e.tracking?"https://www.correos.es/es/es/herramientas/localizador/envios/detalle?tracking-number="+encodeURIComponent(e.tracking):"");
+const renoveMes=f=>["06","07"].includes((f||"").slice(5,7));
+const SUB={Lead:"Interesados",Pendiente:"De envío o montaje",Enviado:"En camino",Entregado:"Falta instalar",Instalado:"Terminado",Devuelto:""};
+const MARCAS=["John Deere","New Holland","Massey Ferguson","Deutz","Case IH","Claas","Fendt","Kubota","Landini","Lamborghini","Valtra","Fiat","Renault"];
+let db=null, ventas=[], tab="tablero", abierta=null;
+const $=s=>document.querySelector(s);
+const eur=n=>(Number(n)||0).toLocaleString("es-ES",{maximumFractionDigits:2})+" €";
+const hoy=()=>new Date().toISOString().slice(0,10);
+const fmtF=f=>f?f.split("-").reverse().join("/"):"—";
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+
+function filtradas(){
+  const q=$("#q").value.trim().toLowerCase(),p=$("#fProv").value,m=$("#fMarca").value;
+  return ventas.filter(v=>(!p||v.provincia===p)&&(!m||v.marca===m)&&(!q||[v.nombre,v.ciudad,v.provincia,v.marca,v.modelo,v.telefono,v.canal,v.num,...facs(v).map(f=>f.numero),...envs(v).flatMap(e=>[e.localizador,e.tracking])].join(" ").toLowerCase().includes(q)));
+}
+
+function kpis(){
+  const act=ventas.filter(v=>v.estado!=="Lead"&&v.estado!=="Devuelto");
+  const mes=hoy().slice(0,7);
+  const delMes=act.filter(v=>(v.fecha||"").startsWith(mes));
+  const pend=act.reduce((a,v)=>a+Math.max(0,Number(v.pendiente)||0),0);
+  const deudores=act.filter(v=>v.pendiente>0).length;
+  const curso=act.filter(v=>["Pendiente","Enviado","Entregado"].includes(v.estado)).length;
+  const leads=ventas.filter(v=>v.estado==="Lead").length;
+  $("#kpis").innerHTML=`
+   <div class="kpi"><b>${eur(Math.round(delMes.reduce((a,v)=>a+neto(v),0)))}</b><span>Revenue este mes sin IVA · ${delMes.length} ventas</span></div>
+   <div class="kpi"><b>${eur(Math.round(act.reduce((a,v)=>a+neto(v),0)))}</b><span>Revenue total sin IVA · ${act.length} equipos</span></div>
+   <div class="kpi warn"><b>${eur(pend)}</b><span>Pendiente de cobro (IVA incl.) · ${deudores} clientes</span></div>
+   <div class="kpi"><b>${curso}</b><span>Sin instalar todavía</span></div>
+   <div class="kpi"><b>${leads}</b><span>Leads abiertos</span></div>`;
+}
+
+function card(v){
+  return `<button class="card" data-e="${esc(v.estado)}" data-id="${esc(v._id)}">
+   <div class="row" style="justify-content:space-between"><span class="n">#${v.num}${facs(v).length?" · "+esc(facs(v).map(f=>f.numero).join(", ")):""}</span><span class="n">${fmtF(v.fecha)}</span></div>
+   <div class="who">${esc(v.nombre)}</div>
+   <div class="meta">${esc([v.ciudad,v.provincia].filter(Boolean).join(", "))}</div>
+   <div class="meta">${esc([v.marca,v.modelo].filter(Boolean).join(" "))||"Tractor sin especificar"}</div>
+   ${v.envioOtra&&v.envio?`<div class="meta">Envío a: ${esc([v.envio.localidad,v.envio.provincia].filter(Boolean).join(", "))}</div>`:""}
+   ${pieza(v)?`<div class="pz">Pieza ${esc(pieza(v))}</div>`:(v.estado==="Pendiente"?'<div class="pz falta">Pieza sin medidas</div>':"")}
+   <div class="row" style="margin-top:4px"><span class="tag ${esMontaje(v)?"mont":""}${esMontaje(v)&&v.estado==="Pendiente"&&!v.montajeFecha?" falta":""}">${esc(entregaTxt(v))}</span>${v.renove?`<span class="tag">Renove ${esc(v.renoveCampana||"")}</span>`:""}${v.origen==="whatsapp"?'<span class="tag">WhatsApp</span>':""}${envs(v).length?'<span class="tag">Con tracking</span>':""}${v.pendiente>0?`<span class="debe">Debe ${eur(v.pendiente)}</span>`:""}</div>
+  </button>`;
+}
+
+function render(){
+  kpis();
+  const list=filtradas();
+  const el=$("#vista");
+  if(!ventas.length){el.innerHTML=`<div class="empty">Aún no hay ventas. Pulsa “+ Nueva venta” para añadir la primera.</div>`;return}
+  if(tab==="tablero"){
+    const corte=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+    const ocultar=$("#fOcultarInst").checked;
+    const cols=ESTADOS.filter(e=>e!=="Devuelto"||list.some(v=>v.estado==="Devuelto"));
+    const pp={};list.filter(v=>v.estado==="Pendiente").forEach(v=>{const k=pieza(v)||"Sin medidas";pp[k]=(pp[k]||0)+1});
+    const piezas=Object.entries(pp).sort((a,b)=>b[1]-a[1]);
+    const mts=list.filter(v=>esMontaje(v)&&v.estado==="Pendiente").sort((a,b)=>(a.montajeFecha||"9999").localeCompare(b.montajeFecha||"9999"));
+    const panelM=mts.length?`<div class="piezas"><b>Montajes pendientes</b> ${mts.map(v=>`<button class="chip" data-id="${esc(v._id)}">${v.montajeFecha?fmtF(v.montajeFecha):"Sin día"} · ${esc(v.nombre)}${v.ciudad?" ("+esc(v.ciudad)+")":""}${v.montajePrecio?" · montador "+eur(v.montajePrecio):""}</button>`).join("")}</div>`:"";
+    el.innerHTML=`${panelM}${piezas.length?`<div class="piezas"><b>Piezas a preparar</b> (ventas pendientes de envío o montaje): ${piezas.map(([k,n])=>`<span class="chip">${esc(k)} <i>×${n}</i></span>`).join("")}</div>`:""}<div class="board">${cols.map(e=>{
+      let vs=list.filter(v=>v.estado===e);
+      const total=vs.length;
+      if(e==="Instalado"&&ocultar) vs=vs.filter(v=>(v.fecha||"")>=corte||v.pendiente>0);
+      vs.sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||"")||b.num-a.num);
+      return `<section class="col" data-e="${e}"><h3><span>${e}<small>${SUB[e]||""}</small></span><i>${total}</i></h3>${vs.map(card).join("")||'<p class="muted" style="margin:6px;font-size:12px">Nada aquí</p>'}${e==="Instalado"&&ocultar&&total>vs.length?`<p class="muted" style="margin:6px;font-size:12px">${total-vs.length} instalados de hace más de 30 días ocultos</p>`:""}</section>`}).join("")}</div>`;
+  }else if(tab==="ventas"){
+    const vs=[...list].sort((a,b)=>b.num-a.num);
+    el.innerHTML=`<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Fecha</th><th>Cliente</th><th>Pueblo</th><th>Provincia</th><th>Tractor</th><th>Estado</th><th>Entrega</th><th>Renove</th><th>Pieza</th><th class="num">Precio (IVA)</th><th class="num">Sin IVA</th><th class="num">Pendiente</th><th>Canal</th><th>Facturas</th><th>Tracking</th></tr></thead><tbody>${vs.map(v=>`<tr tabindex="0" data-id="${esc(v._id)}"><td class="num">${v.num}</td><td class="mono">${fmtF(v.fecha)}</td><td>${esc(v.nombre)}</td><td>${esc(v.ciudad)}</td><td>${esc(v.provincia)}</td><td>${esc([v.marca,v.modelo].filter(Boolean).join(" "))}</td><td><span class="pill" data-e="${esc(v.estado)}">${esc(v.estado)}</span></td><td>${esc(entregaTxt(v))}</td><td>${v.renove?"Sí "+esc(v.renoveCampana||""):"No"}</td><td class="mono">${esc(pieza(v))||"—"}</td><td class="num">${eur(v.precio)}</td><td class="num">${eur(Math.round(neto(v)*100)/100)}</td><td class="num" style="${v.pendiente>0?"color:var(--pend)":""}">${v.pendiente>0?eur(v.pendiente):"—"}</td><td>${esc(v.canal)}</td><td class="mono">${esc(facs(v).map(f=>f.numero).join(", "))}</td><td class="mono">${envs(v).map(e=>trackUrl(e)?`<a href="${esc(trackUrl(e))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(e.tracking||e.localizador)}</a>`:esc(e.localizador)).join(", ")}</td></tr>`).join("")}</tbody></table></div><p class="muted">${vs.length} ventas</p>`;
+  }else if(tab==="cobros"){
+    const vs=list.filter(v=>v.pendiente>0&&v.estado!=="Lead"&&v.estado!=="Devuelto").sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));
+    const tot=vs.reduce((a,v)=>a+v.pendiente,0);
+    el.innerHTML=vs.length?`<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Fecha</th><th>Cliente</th><th>Teléfono</th><th>Estado</th><th>Tipo</th><th class="num">Precio</th><th class="num">Pagado</th><th class="num">Pendiente</th><th class="num">Días</th></tr></thead><tbody>${vs.map(v=>{const d=v.fecha?Math.round((Date.now()-new Date(v.fecha))/864e5):"";return `<tr tabindex="0" data-id="${esc(v._id)}"><td class="num">${v.num}</td><td class="mono">${fmtF(v.fecha)}</td><td>${esc(v.nombre)}</td><td class="mono">${esc(v.telefono)||"—"}</td><td><span class="pill" data-e="${esc(v.estado)}">${esc(v.estado)}</span></td><td>${esMontaje(v)?"Montaje":"Envío"}${v.renove?" · Renove":""}</td><td class="num">${eur(v.precio)}</td><td class="num">${eur(v.pagado)}</td><td class="num" style="color:var(--pend);font-weight:600">${eur(v.pendiente)}</td><td class="num">${d}</td></tr>`}).join("")}</tbody></table></div><p><b>${eur(tot)}</b> pendientes en ${vs.length} ventas.</p>`:`<div class="empty">No hay nada pendiente de cobro con estos filtros.</div>`;
+  }else if(tab==="clientes"){
+    const g=new Map();
+    list.forEach(v=>{const k=(v.telefono||(v.nombre+"|"+v.ciudad)).toLowerCase();if(!g.has(k))g.set(k,[]);g.get(k).push(v)});
+    const cs=[...g.values()].map(vs=>({v:vs.sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""))[0],n:vs.length,tot:vs.reduce((a,x)=>a+neto(x),0),pend:vs.reduce((a,x)=>a+(x.pendiente||0),0)})).sort((a,b)=>b.n-a.n||(b.v.fecha||"").localeCompare(a.v.fecha||""));
+    el.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Pueblo</th><th>Provincia</th><th class="num">Equipos</th><th class="num">Revenue sin IVA</th><th class="num">Pendiente</th><th>Última compra</th><th>Canal</th></tr></thead><tbody>${cs.map(c=>`<tr tabindex="0" data-id="${esc(c.v._id)}"><td>${esc(c.v.nombre)}</td><td class="mono">${esc(c.v.telefono)||"—"}</td><td>${esc(c.v.ciudad)}</td><td>${esc(c.v.provincia)}</td><td class="num">${c.n}</td><td class="num">${eur(Math.round(c.tot))}</td><td class="num">${c.pend>0?eur(c.pend):"—"}</td><td class="mono">${fmtF(c.v.fecha)}</td><td>${esc(c.v.canal)}</td></tr>`).join("")}</tbody></table></div><p class="muted">${cs.length} clientes (agrupados por teléfono, o por nombre y pueblo si no hay teléfono)</p>`;
+  }else{
+    const act=list.filter(v=>v.estado!=="Lead"&&v.estado!=="Devuelto");
+    const bloque=(t,key)=>{const c={};act.forEach(v=>{const k=key(v)||"Sin dato";c[k]=(c[k]||0)+1});const arr=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10);const mx=arr[0]?.[1]||1;return `<div class="bars"><h4>${t}</h4>${arr.map(([k,n])=>`<div class="bar"><span>${esc(k)}</span><div><span style="width:${n/mx*100}%"></span></div><em>${n}</em></div>`).join("")}</div>`};
+    const rm={};act.forEach(v=>{const k=(v.fecha||"").slice(0,7)||"Sin fecha";rm[k]=(rm[k]||0)+neto(v)});
+    const rma=Object.entries(rm).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12);const rmx=Math.max(1,...rma.map(x=>x[1]));
+    const revMes=`<div class="bars"><h4>Revenue sin IVA por mes</h4>${rma.map(([k,n])=>`<div class="bar wide"><span>${esc(k)}</span><div><span style="width:${n/rmx*100}%"></span></div><em>${eur(Math.round(n))}</em></div>`).join("")}</div>`;
+    el.innerHTML=`<div class="split">${revMes}${bloque("Ventas por mes",v=>(v.fecha||"").slice(0,7))}${bloque("Por provincia",v=>v.provincia)}${bloque("Por marca",v=>v.marca)}${bloque("Por canal",v=>v.canal)}</div>`;
+  }
+}
+
+function opts(arr,sel){return arr.map(x=>`<option ${x===sel?"selected":""}>${esc(x)}</option>`).join("")}
+function abrir(v){
+  abierta=v;const nueva=!v._id;
+  $("#drawer").innerHTML=`
+  <div class="row" style="justify-content:space-between"><span class="mono muted">${nueva?"Nueva":"Venta #"+v.num}</span><button class="btn" id="cerrar">Cerrar</button></div>
+  <h2>${esc(v.nombre)||"Nuevo cliente"}</h2>
+  ${v.telefono?`<div class="row"><span class="mono">${esc(v.telefono)}</span><a class="btn" href="https://wa.me/34${esc(v.telefono)}" target="_blank" rel="noopener">Abrir WhatsApp</a></div>`:""}
+  <form id="f" class="grid2">
+    <label>Nº<input id="c_num" type="number" value="${v.num??""}"></label>
+    <label>Fecha<input id="c_fecha" type="date" value="${esc(v.fecha)}"></label>
+    <label class="full">Nombre<input id="c_nombre" value="${esc(v.nombre)}" required></label>
+    <label>Teléfono<input id="c_tel" inputmode="tel" value="${esc(v.telefono)}"></label>
+    <label>Estado<select id="c_estado">${opts(ESTADOS,v.estado)}</select></label>
+    <label>Pueblo<input id="c_ciudad" value="${esc(v.ciudad)}"></label>
+    <label>Provincia<input id="c_prov" value="${esc(v.provincia)}"></label>
+    <label>Email<input id="c_email" type="email" value="${esc(v.email)}"></label>
+    <label>NIF / CIF<input id="c_nif" value="${esc(v.nif)}"></label>
+    <label class="full">Dirección de facturación<input id="c_dir" placeholder="Calle y número" value="${esc(v.direccion)}"></label>
+    <label>Código postal<input id="c_cp" inputmode="numeric" value="${esc(v.cp)}"></label>
+    <label>País<input id="c_pais" value="${esc(v.pais||"España")}"></label>
+    <div class="checks"><label><input type="checkbox" id="c_envioOtra" ${v.envioOtra?"checked":""}> Enviar a otra dirección</label></div>
+    <label class="full ev">Recibe (nombre)<input id="e_nombre" value="${esc(v.envio?.nombre)}"></label>
+    <label class="full ev">Dirección de envío<input id="e_dir" value="${esc(v.envio?.direccion)}"></label>
+    <label class="ev">CP envío<input id="e_cp" inputmode="numeric" value="${esc(v.envio?.cp)}"></label>
+    <label class="ev">Pueblo envío<input id="e_loc" value="${esc(v.envio?.localidad)}"></label>
+    <label class="ev">Provincia envío<input id="e_prov" value="${esc(v.envio?.provincia)}"></label>
+    <label class="ev">Teléfono de quien recibe<input id="e_tel" inputmode="tel" value="${esc(v.envio?.telefono)}"></label>
+    <label>Tipo<select id="c_tipo">${opts(["Tractor","Cosechadora","Otro"],v.tipo||"Tractor")}</select></label>
+    <label>Marca<input id="c_marca" list="dlMarcas" value="${esc(v.marca)}"></label>
+    <label>Modelo<input id="c_modelo" value="${esc(v.modelo)}"></label>
+    <label>Canal<input id="c_canal" list="dlCanal" value="${esc(v.canal)}"></label>
+    <label>Pieza: diámetro<input id="c_diam" value="${esc(v.diametro)}"></label>
+    <label>Pieza: dientes<input id="c_dientes" value="${esc(v.dientes)}"></label>
+    <label>Precio con IVA (€)<input id="c_precio" type="number" step="0.01" value="${v.precio??""}"><span id="c_neto" class="neto">${v.precio?"Sin IVA: "+eur(Math.round(neto(v)*100)/100):""}</span></label>
+    <label>Pagado (€)<input id="c_pagado" type="number" step="0.01" value="${v.pagado??""}"></label>
+    <label>Entrega<select id="c_entrega">${opts(["Envío","Montaje"],v.entrega||"Envío")}</select></label>
+    <span></span>
+    <label class="mt">Día de montaje<input id="c_mfecha" type="date" value="${esc(v.montajeFecha)}"></label>
+    <label class="mt">Cobra el montador (€)<input id="c_mprecio" type="number" step="0.01" value="${v.montajePrecio??""}"><span class="neto">Lo paga el cliente al montador; no cuenta en el revenue de Satio</span></label>
+    <label>Plan Renove<select id="c_renove">${opts(["No","Sí"],v.renove?"Sí":"No")}</select></label>
+    <label class="rn">Trámite Renove<select id="c_tram">${opts(["","Yo","Lo procesan ellos"],v.tramiteRenove||"")}</select></label>
+    <p class="neto full" id="c_rnaviso" style="grid-column:1/-1;margin:0" hidden></p>
+    <label class="full">Notas<textarea id="c_notas" rows="2">${esc(v.notas)}</textarea></label>
+    <div class="row full" style="grid-column:1/-1"><button class="btn primary" type="submit">Guardar</button>${!nueva?`<button class="btn danger" type="button" id="borrar">Eliminar</button><span id="confBorrar" hidden class="row"><span>¿Seguro?</span><button class="btn danger" type="button" id="borrarSi">Sí, eliminar</button></span>`:""}</div>
+  </form>
+  ${!nueva?`<h4>Facturas</h4>
+  <ul class="docs" id="lstF">${facs(v).map((f,i)=>`<li><span class="mono"><b>${esc(f.numero)}</b></span><span class="muted">${[fmtF(f.fecha),f.importe?eur(f.importe):"",f.tipo].filter(x=>x&&x!=="—").map(esc).join(" · ")}</span>${f.pdf?(f.pdf.startsWith("sb:")?`<button class="btn sm" type="button" data-sbpdf="${esc(f.pdf.slice(3))}">Ver PDF</button>`:`<a class="btn sm" href="${esc(f.pdf)}" target="_blank" rel="noopener">Ver PDF</a>`):""}<button class="btn sm danger" type="button" data-delf="${i}">Quitar</button></li>`).join("")||'<li class="muted">Sin facturas todavía</li>'}</ul>
+  <div class="addrow"><input id="nf_num" placeholder="F2026XX"><input id="nf_fecha" type="date" value="${hoy()}"><input id="nf_imp" type="number" step="0.01" placeholder="Importe con IVA"><select id="nf_tipo">${opts(["Final","Anticipo","Rectificativa"],"Final")}</select><label class="file" id="nf_pdfl">PDF <input id="nf_pdf" type="file" accept="application/pdf"></label><button class="btn" type="button" id="addF">Añadir factura</button></div>
+  <h4>Envíos</h4>
+  <ul class="docs">${envs(v).map((e,i)=>`<li><span class="mono">${e.localizador?`Localizador <b>${esc(e.localizador)}</b>`:""}${e.localizador&&e.tracking?" · ":""}${e.tracking?`Tracking <b>${esc(e.tracking)}</b>`:""}</span><span class="muted">${[e.transportista,fmtF(e.fecha)].filter(x=>x&&x!=="—").map(esc).join(" · ")}</span>${trackUrl(e)?`<a class="btn sm" href="${esc(trackUrl(e))}" target="_blank" rel="noopener">Seguir envío</a>`:""}<button class="btn sm danger" type="button" data-dele="${i}">Quitar</button></li>`).join("")||'<li class="muted">Sin envíos todavía</li>'}</ul>
+  <div class="addrow"><input id="ne_loc" placeholder="Localizador Packlink"><input id="ne_trk" placeholder="Nº tracking"><input id="ne_url" placeholder="Link de tracking (opcional)"><select id="ne_tr">${opts(["Correos","GLS","SEUR","MRW","Otro"],"Correos")}</select><input id="ne_fecha" type="date" value="${hoy()}"><button class="btn" type="button" id="addE">Añadir envío</button></div>
+  <h4>Historial</h4>
+  <div class="row"><input id="c_nota" placeholder="Añadir nota (llamada, WhatsApp, pago…)" style="flex:1"><button class="btn" id="addNota">Añadir</button></div>
+  <ul class="hist">${[...(v.historial||[])].reverse().map(h=>`<li><span class="d">${fmtF(h.fecha)}${h.fuente?" · "+esc(h.fuente):""}</span>${esc(h.texto)}</li>`).join("")}</ul>`:""}
+  <datalist id="dlMarcas">${MARCAS.map(m=>`<option value="${m}">`).join("")}</datalist>
+  <datalist id="dlCanal">${[...new Set(ventas.map(x=>x.canal).filter(Boolean))].map(m=>`<option value="${esc(m)}">`).join("")}</datalist>`;
+  $("#drawer").hidden=false;$("#scrim").hidden=false;
+  $("#cerrar").onclick=cerrar;
+  $("#c_precio").addEventListener("input",e=>{const n=Number(e.target.value)||0;$("#c_neto").textContent=n?"Sin IVA: "+eur(Math.round(n/IVA*100)/100):""});
+  const sync=()=>{document.querySelectorAll("#f .ev").forEach(x=>x.hidden=!$("#c_envioOtra").checked);const m=$("#c_entrega").value==="Montaje";document.querySelectorAll("#f .mt").forEach(x=>x.hidden=!m);const r=$("#c_renove").value==="Sí";document.querySelectorAll("#f .rn").forEach(x=>x.hidden=!r);const f=$("#c_fecha").value;const av=$("#c_rnaviso");av.hidden=!(r&&f&&!renoveMes(f));av.textContent="Ojo: el Plan Renove solo se aplica en junio y julio, y esta venta es de "+fmtF(f)+".";};
+  ["c_entrega","c_renove","c_fecha","c_envioOtra"].forEach(id=>$("#"+id).addEventListener("input",sync));sync();
+  $("#f").onsubmit=e=>{e.preventDefault();guardar()};
+  if(!nueva){
+    $("#borrar").onclick=()=>$("#confBorrar").hidden=false;
+    $("#borrarSi").onclick=async()=>{try{await db.doc("ventas/"+v._id).delete();toast("Venta eliminada");cerrar()}catch(e){toast("No se pudo eliminar: "+e.code)}};
+    const guardarLista=async(campo,lista,texto)=>{const h=[...(v.historial||[]),{fecha:hoy(),texto,fuente:"manual"}];const extra=campo==="envios"&&v.estado==="Pendiente"&&lista.length>envs(v).length?{estado:"Enviado"}:{};try{await db.doc("ventas/"+v._id).update({[campo]:lista,historial:h,...extra});toast("Guardado");cerrar()}catch(e){toast("No se pudo guardar: "+e.code)}};
+    $("#drawer").querySelectorAll("[data-delf]").forEach(b=>b.onclick=()=>{const l=[...facs(v)];const [x]=l.splice(+b.dataset.delf,1);guardarLista("facturas",l,`Factura ${x.numero} quitada`)});
+    $("#drawer").querySelectorAll("[data-dele]").forEach(b=>b.onclick=()=>{const l=[...envs(v)];const [x]=l.splice(+b.dataset.dele,1);guardarLista("envios",l,`Envío ${x.localizador||x.tracking} quitado`)});
+    assetsP.then(a=>{if(!a)$("#nf_pdfl").hidden=true});
+    $("#addF").onclick=async()=>{const num=$("#nf_num").value.trim();if(!num){toast("Pon el número de factura");return}
+      const f={numero:num,fecha:$("#nf_fecha").value,importe:Number($("#nf_imp").value)||null,tipo:$("#nf_tipo").value,pdf:""};
+      const file=$("#nf_pdf").files[0];
+      if(file){const a=await assetsP;if(a){try{toast("Subiendo PDF…");const r=await a.upload(file);f.pdf=r.url;f.pdfId=r.id}catch(e){toast("No se pudo subir el PDF: "+(e.code||e.message));return}}}
+      guardarLista("facturas",[...facs(v),f],`Factura ${num} añadida${f.importe?" ("+eur(f.importe)+")":""}`)};
+    $("#addE").onclick=()=>{const loc=$("#ne_loc").value.trim(),trk=$("#ne_trk").value.trim();if(!loc&&!trk){toast("Pon el localizador o el tracking");return}
+      const e={localizador:loc,tracking:trk,url:$("#ne_url").value.trim(),transportista:$("#ne_tr").value,fecha:$("#ne_fecha").value};
+      guardarLista("envios",[...envs(v),e],`Envío añadido: ${[loc&&"localizador "+loc,trk&&"tracking "+trk].filter(Boolean).join(", ")}`)};
+    $("#addNota").onclick=async()=>{const t=$("#c_nota").value.trim();if(!t)return;const h=[...(v.historial||[]),{fecha:hoy(),texto:t,fuente:"manual"}];try{await db.doc("ventas/"+v._id).update({historial:h});toast("Nota añadida")}catch(e){toast("No se pudo guardar la nota: "+e.code)}};
+  }
+}
+function cerrar(){$("#drawer").hidden=true;$("#scrim").hidden=true;abierta=null}
+async function guardar(){
+  
+  const v=abierta,g=id=>$("#"+id).value.trim(),n=id=>Number($("#"+id).value)||0;
+  const d={num:n("c_num"),fecha:g("c_fecha"),nombre:g("c_nombre"),telefono:g("c_tel").replace(/\D/g,""),estado:g("c_estado"),ciudad:g("c_ciudad"),provincia:g("c_prov"),email:g("c_email"),nif:g("c_nif").replace(/[\s.\-]/g,"").toUpperCase(),direccion:g("c_dir"),cp:g("c_cp"),pais:g("c_pais"),envioOtra:$("#c_envioOtra").checked,envio:$("#c_envioOtra").checked?{nombre:g("e_nombre"),direccion:g("e_dir"),cp:g("e_cp"),localidad:g("e_loc"),provincia:g("e_prov"),telefono:g("e_tel").replace(/\D/g,"")}:null,tipo:g("c_tipo"),marca:g("c_marca"),modelo:g("c_modelo"),canal:g("c_canal"),diametro:g("c_diam"),dientes:g("c_dientes"),precio:n("c_precio"),pagado:n("c_pagado"),renove:$("#c_renove").value==="Sí",entrega:g("c_entrega"),montajeFecha:g("c_entrega")==="Montaje"?g("c_mfecha"):"",montajePrecio:g("c_entrega")==="Montaje"&&$("#c_mprecio").value!==""?n("c_mprecio"):null,tramiteRenove:g("c_tram"),notas:g("c_notas")};
+  d.pendiente=Math.round((d.precio-d.pagado)*100)/100;
+  d.renoveCampana=d.renove?(d.fecha||hoy()).slice(0,4):"";if(!d.renove)d.tramiteRenove="";
+  const cambios=[];
+  if(v._id){
+    if(v.estado!==d.estado)cambios.push(`Estado: ${v.estado} → ${d.estado}`);
+    if(v.pagado!==d.pagado)cambios.push(`Pagado: ${eur(v.pagado)} → ${eur(d.pagado)}`);
+    if((v.entrega||"Envío")!==d.entrega)cambios.push(`Entrega: ${d.entrega}`);
+    if((v.montajeFecha||"")!==d.montajeFecha&&d.montajeFecha)cambios.push(`Montaje el ${fmtF(d.montajeFecha)}`);
+    d.historial=[...(v.historial||[]),...(cambios.length?[{fecha:hoy(),texto:cambios.join(" · "),fuente:"manual"}]:[])];
+    try{await db.doc("ventas/"+v._id).update(d);toast("Guardado");cerrar()}catch(e){toast("No se pudo guardar: "+e.code)}
+  }else{
+    d.origen=v.origen||"manual";d.historial=[{fecha:hoy(),texto:d.estado==="Lead"?"Lead creado":"Venta creada",fuente:"manual"}];
+    const id="v"+String(d.num).padStart(4,"0")+"-"+Date.now().toString(36);
+    try{await db.doc("ventas/"+id).set(d);toast("Venta creada");cerrar()}catch(e){toast("No se pudo crear: "+e.code)}
+  }
+}
+function nueva(estado){
+  const max=ventas.reduce((a,v)=>Math.max(a,v.num||0),0);
+  abrir({num:max+1,fecha:hoy(),estado,precio:estado==="Lead"?"":2499,pagado:0,tipo:"Tractor"});
+}
+
+document.querySelector("nav.tabs").onclick=e=>{const b=e.target.closest("button");if(!b)return;tab=b.dataset.tab;document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));try{localStorage.setItem("satio_tab",tab)}catch(_){}render()};
+$("#vista").addEventListener("click",e=>{const t=e.target.closest("[data-id]");if(t){const v=ventas.find(x=>x._id===t.dataset.id);if(v)abrir(v)}});
+$("#vista").addEventListener("keydown",e=>{if(e.key==="Enter"){const t=e.target.closest("tr[data-id]");if(t)t.click()}});
+["q","fProv","fMarca","fOcultarInst"].forEach(id=>$("#"+id).addEventListener("input",render));
+$("#scrim").onclick=cerrar;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&abierta)cerrar()});
+$("#btnNueva").onclick=()=>nueva("Pendiente");
+$("#btnLead").onclick=()=>nueva("Lead");
+try{const t=localStorage.getItem("satio_tab");if(t){tab=t;document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===t))}}catch(_){}
+
+function rellenarFiltros(){
+  const fill=(id,vals,label)=>{const s=$("#"+id),cur=s.value;s.innerHTML=`<option value="">${label}</option>`+[...new Set(vals.filter(Boolean))].sort().map(x=>`<option ${x===cur?"selected":""}>${esc(x)}</option>`).join("")};
+  fill("fProv",ventas.map(v=>v.provincia),"Todas las provincias");
+  fill("fMarca",ventas.map(v=>v.marca),"Todas las marcas");
+}
+
+
+/* ---------- Supabase ---------- */
+const SB=supabase.createClient("https://jinlgrdveixbjavbabam.supabase.co","sb_publishable_HgqZ0AhLPXi94TasTaSYNQ_ofgnliIJ");
+const MAP={envioOtra:"envio_otra",montajeFecha:"montaje_fecha",montajePrecio:"montaje_precio",renoveCampana:"renove_campana",tramiteRenove:"tramite_renove"};
+const INV=Object.fromEntries(Object.entries(MAP).map(([a,b])=>[b,a]));
+const NUMS=["precio","pagado","pendiente","montaje_precio"];
+function toRow(d){const r={};for(const[k,v]of Object.entries(d)){if(k==="pendiente"||k==="_id")continue;r[MAP[k]||k]=v===""?null:v}return r}
+function fromRow(r){const v={};for(const[k,x]of Object.entries(r)){v[INV[k]||k]=NUMS.includes(k)&&x!=null?Number(x):x}v._id=r.id;return v}
+const chk=({error})=>{if(error)throw{code:error.code||error.message,message:error.message}};
+db={doc(p){const id=p.split("/")[1];return{
+  update:async d=>{chk(await SB.from("ventas").update(toRow(d)).eq("id",id));await cargar()},
+  set:async d=>{chk(await SB.from("ventas").insert({...toRow(d),id}));await cargar()},
+  delete:async()=>{chk(await SB.from("ventas").delete().eq("id",id));await cargar()}}}};
+const assetsP=Promise.resolve({upload:async file=>{
+  const path=`${new Date().toISOString().slice(0,7)}/${Date.now().toString(36)}-${file.name.replace(/[^\w.\-]+/g,"_")}`;
+  const{error}=await SB.storage.from("facturas").upload(path,file,{contentType:"application/pdf"});
+  if(error)throw{code:error.message};return{url:"sb:"+path,id:path}}});
+$("#drawer").addEventListener("click",async e=>{const b=e.target.closest("[data-sbpdf]");if(!b)return;
+  const w=window.open("","_blank");const{data,error}=await SB.storage.from("facturas").createSignedUrl(b.dataset.sbpdf,300);
+  if(error||!data){w&&w.close();toast("No se pudo abrir el PDF");return}if(w)w.location=data.signedUrl;else location.href=data.signedUrl});
+
+async function cargar(){
+  const{data,error}=await SB.from("ventas").select("*").order("num");
+  if(error){$("#vista").innerHTML=`<div class="empty">No se pudieron cargar las ventas (${esc(error.message)}). Recarga la página.</div>`;return}
+  if(!data.length){const u=await SB.from("crm_usuarios").select("email");if(!u.data||!u.data.length){$("#vista").innerHTML=`<div class="empty">Este email no tiene acceso al CRM. Pide a Diego que te dé de alta.</div>`;return}}
+  ventas=data.map(fromRow);rellenarFiltros();render();
+  if(abierta&&abierta._id){const nv=ventas.find(x=>x._id===abierta._id);if(nv&&$("#drawer").querySelector(".hist")){abierta=nv;$("#drawer .hist").innerHTML=[...(nv.historial||[])].reverse().map(h=>`<li><span class="d">${fmtF(h.fecha)}${h.fuente?" · "+esc(h.fuente):""}</span>${esc(h.texto)}</li>`).join("");const ni=$("#c_nota");if(ni)ni.value=""}}
+}
+let canal=null,tRec=null;
+function entrar(session){
+  $("#login").hidden=true;$("#app").hidden=false;$("#quien").textContent=session.user.email;
+  cargar();
+  if(!canal)canal=SB.channel("ventas").on("postgres_changes",{event:"*",schema:"public",table:"ventas"},()=>{clearTimeout(tRec);tRec=setTimeout(cargar,400)}).subscribe();
+}
+function salirUI(){$("#app").hidden=true;$("#login").hidden=false;if(canal){SB.removeChannel(canal);canal=null}ventas=[]}
+$("#fLogin").onsubmit=async e=>{e.preventDefault();const email=$("#lEmail").value.trim().toLowerCase();$("#lMsg").textContent="Enviando…";
+  const{error}=await SB.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+  $("#lMsg").textContent=error?"No se pudo enviar: "+error.message:"Listo. Abre el enlace que te ha llegado a "+email+" desde este mismo navegador."};
+$("#btnSalir").onclick=async()=>{await SB.auth.signOut();salirUI()};
+SB.auth.onAuthStateChange((ev,session)=>{if(session&&$("#app").hidden)entrar(session);if(ev==="SIGNED_OUT")salirUI()});
+SB.auth.getSession().then(({data})=>{if(data.session)entrar(data.session);else salirUI()});
+
+</script>
+</body>
+</html>
