@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Soporte Satio</title>
+<meta name="description" content="Soporte técnico del autoguiado Satio Terra">
+<meta name="theme-color" content="#4b5a26">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Soporte Satio">
+<style>
+  :root {
+    --oliva: #4b5a26;
+    --oliva-osc: #36421a;
+    --oliva-claro: #e6ead5;
+    --crema: #f7f3e8;
+    --papel: #fffdf7;
+    --tinta: #23261c;
+    --gris: #6b6e60;
+    --borde: #ddd7c4;
+    --aviso: #8a5a12;
+    --aviso-bg: #fbf0d9;
+    --error: #9b2c22;
+    --r: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --oliva: #9fb062;
+      --oliva-osc: #c4d38c;
+      --oliva-claro: #2c3320;
+      --crema: #171913;
+      --papel: #20231a;
+      --tinta: #ece9dc;
+      --gris: #a6a895;
+      --borde: #363a2c;
+      --aviso: #f0c46d;
+      --aviso-bg: #33290f;
+      --error: #f08a7e;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--crema); color: var(--tinta);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column; height: 100dvh;
+  }
+  header {
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    background: var(--papel); border-bottom: 1px solid var(--borde);
+  }
+  .marca { font-weight: 700; font-size: 20px; letter-spacing: -0.02em; color: var(--oliva); }
+  .marca small { font-weight: 500; font-size: 14px; color: var(--gris); margin-left: 6px; letter-spacing: 0; }
+  header .esp { flex: 1; }
+  .btn {
+    border: 1px solid var(--borde); background: var(--papel); color: var(--tinta);
+    border-radius: 999px; padding: 7px 12px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--oliva); }
+  .btn.prim { background: var(--oliva); border-color: var(--oliva); color: var(--papel); font-weight: 600; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .cliente-ok { font-size: 14px; color: var(--oliva-osc); font-weight: 600; }
+
+  #chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: min(88%, 620px); padding: 10px 14px; border-radius: var(--r); word-wrap: break-word; }
+  .msg p { margin: 0 0 .5em; } .msg p:last-child { margin-bottom: 0; }
+  .msg ol, .msg ul { margin: .3em 0 .5em; padding-left: 1.3em; }
+  .msg li { margin: .15em 0; }
+  .bot { background: var(--papel); border: 1px solid var(--borde); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .satio { background: var(--oliva-claro); border: 1px solid var(--oliva); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .satio .quien { font-size: 12px; font-weight: 700; color: var(--oliva-osc); margin-bottom: 2px; }
+  .cliente { background: var(--oliva); color: var(--papel); align-self: flex-end; border-bottom-right-radius: 4px; }
+  .cliente .foto { font-size: 13px; opacity: .85; }
+  .cliente img { display: block; max-width: 220px; max-height: 220px; border-radius: 8px; margin-bottom: 6px; }
+  .escribiendo { color: var(--gris); font-size: 14px; align-self: flex-start; padding: 4px 6px; }
+  .escribiendo span { animation: p 1.2s infinite; } .escribiendo span:nth-child(2){animation-delay:.2s} .escribiendo span:nth-child(3){animation-delay:.4s}
+  @keyframes p { 0%,60%,100%{opacity:.2} 30%{opacity:1} }
+  @media (prefers-reduced-motion: reduce) { .escribiendo span { animation: none; } }
+
+  .banda { margin: 0 16px 8px; padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+  .banda.aviso { background: var(--aviso-bg); color: var(--aviso); }
+  .banda.error { background: transparent; color: var(--error); border: 1px solid var(--error); }
+
+  #ident { margin: 0 16px 8px; padding: 12px; border: 1px solid var(--borde); background: var(--papel); border-radius: var(--r); }
+  #ident p { margin: 0 0 8px; font-size: 14px; color: var(--gris); }
+  #ident .fila { display: flex; gap: 8px; flex-wrap: wrap; }
+  #ident input { flex: 1 1 140px; }
+  input, textarea {
+    font: inherit; color: var(--tinta); background: var(--papel);
+    border: 1px solid var(--borde); border-radius: 10px; padding: 9px 11px; min-width: 0;
+  }
+  input:focus, textarea:focus { outline: 2px solid var(--oliva); outline-offset: -1px; border-color: transparent; }
+
+  form#envio {
+    display: flex; align-items: flex-end; gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--papel); border-top: 1px solid var(--borde);
+  }
+  #texto { flex: 1; resize: none; max-height: 140px; }
+  .icono { width: 42px; height: 42px; border-radius: 50%; padding: 0; display: grid; place-items: center; flex: none; }
+  .icono svg { width: 20px; height: 20px; }
+  #previa { display: none; align-items: center; gap: 8px; padding: 6px 16px 0; font-size: 13px; color: var(--gris); }
+  #previa img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; }
+  .oculto { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">Satio<small>Soporte</small></div>
+  <div class="esp"></div>
+  <span id="estadoCliente" class="cliente-ok oculto"></span>
+  <button id="btnCliente" class="btn" type="button">Soy cliente</button>
+  <button id="btnNueva" class="btn" type="button" title="Empezar una conversación nueva">Nueva</button>
+</header>
+
+<main id="chat" aria-live="polite"></main>
+
+<div id="ident" class="oculto">
+  <p>Escribe el teléfono y el código postal que diste al comprar. Así veo tu equipo y tu pedido.</p>
+  <form id="formIdent" class="fila">
+    <input id="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Teléfono" required>
+    <input id="cp" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="Código postal" required>
+    <button class="btn prim" type="submit">Entrar</button>
+    <button class="btn" type="button" id="btnIdentCancelar">Cancelar</button>
+  </form>
+</div>
+<div id="banda" class="banda oculto"></div>
+
+<div id="previa"><img alt=""><span>Foto lista para enviar</span><button class="btn" type="button" id="quitarFoto">Quitar</button></div>
+<form id="envio">
+  <input id="archivo" type="file" accept="image/*" class="oculto">
+  <button class="btn icono" type="button" id="btnFoto" aria-label="Adjuntar foto">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+  </button>
+  <textarea id="texto" rows="1" placeholder="Escribe tu consulta…" aria-label="Tu consulta"></textarea>
+  <button class="btn prim icono" type="submit" id="btnEnviar" aria-label="Enviar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+  </button>
+</form>
+
+<script>
+(() => {
+  const API = "https://jinlgrdveixbjavbabam.supabase.co/functions/v1/soporte-chat";
+  const $ = (id) => document.getElementById(id);
+  const chat = $("chat"), texto = $("texto"), banda = $("banda");
+  const params = new URLSearchParams(location.search);
+
+  const guardar = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+  const leer = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+
+  if (params.get("clave")) guardar("satio_clave", params.get("clave"));
+  const clave = leer("satio_clave") || "";
+  const origen = params.get("origen") || "web";
+  const equipo = params.get("equipo") || "";
+
+  let conv = leer("satio_conv");
+  let estado = "abierta";
+  let foto = null;           // { tipo, datos, url }
+  let ocupado = false;
+  let sondeo = null;
+  let ultimoId = 0;
+
+  async function api(body) {
+    const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(j.error || "No hay conexión. Inténtalo de nuevo."); e.status = r.status; throw e; }
+    return j;
+  }
+
+  // Markdown mínimo y seguro: negrita, listas y párrafos
+  function md(t) {
+    const esc = String(t || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const inline = (s) => s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    const out = []; let lista = null;
+    for (const linea of esc.split("\n")) {
+      const n = linea.match(/^\s*(\d+)[.)]\s+(.*)$/), b = linea.match(/^\s*[-•*]\s+(.*)$/);
+      const tipo = n ? "ol" : b ? "ul" : null;
+      if (tipo) {
+        if (!lista || lista.tipo !== tipo) { if (lista) out.push(`</${lista.tipo}>`); lista = { tipo }; out.push(`<${tipo}>`); }
+        out.push(`<li>${inline(n ? n[2] : b[1])}</li>`);
+      } else {
+        if (lista) { out.push(`</${lista.tipo}>`); lista = null; }
+        if (linea.trim()) out.push(`<p>${inline(linea)}</p>`);
+      }
+    }
+    if (lista) out.push(`</${lista.tipo}>`);
+    return out.join("");
+  }
+
+  function pintar(m) {
+    const d = document.createElement("div");
+    d.className = "msg " + m.rol;
+    if (m.rol === "satio") d.innerHTML = `<div class="quien">Equipo de Satio</div>` + md(m.texto);
+    else if (m.rol === "cliente") {
+      if (m.fotoUrl) { const i = document.createElement("img"); i.src = m.fotoUrl; i.alt = "Foto enviada"; d.appendChild(i); }
+      else if (m.foto) { const s = document.createElement("div"); s.className = "foto"; s.textContent = "Foto enviada"; d.appendChild(s); }
+      if (m.texto) { const s = document.createElement("div"); s.textContent = m.texto; d.appendChild(s); }
+    } else d.innerHTML = md(m.texto);
+    chat.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function aviso(t, tipo = "aviso") {
+    if (!t) { banda.classList.add("oculto"); return; }
+    banda.className = "banda " + tipo; banda.textContent = t;
+  }
+
+  function ponerEstado(e) {
+    estado = e;
+    if (e === "escalada") {
+      aviso("El equipo de Satio tiene tu consulta. Te contestarán aquí mismo o por teléfono; puedes cerrar y volver más tarde.");
+      if (!sondeo) sondeo = setInterval(refrescar, 20000);
+    } else {
+      if (banda.classList.contains("aviso")) aviso(null);
+      if (sondeo) { clearInterval(sondeo); sondeo = null; }
+    }
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function ponerCliente(ok, nombre) {
+    $("btnCliente").classList.toggle("oculto", ok);
+    $("estadoCliente").classList.toggle("oculto", !ok);
+    $("estadoCliente").textContent = ok ? (nombre ? `Cliente: ${nombre}` : "Cliente") : "";
+    if (ok) $("ident").classList.add("oculto");
+  }
+
+  function escribiendo(si) {
+    let e = document.querySelector(".escribiendo");
+    if (si && !e) { e = document.createElement("div"); e.className = "escribiendo"; e.innerHTML = "Escribiendo<span>.</span><span>.</span><span>.</span>"; chat.appendChild(e); chat.scrollTop = chat.scrollHeight; }
+    if (!si && e) e.remove();
+  }
+
+  async function nueva() {
+    chat.innerHTML = ""; aviso(null); ponerCliente(false); ultimoId = 0;
+    try {
+      const r = await api({ accion: "iniciar", clave, origen, equipo });
+      conv = r.conversacion_id; guardar("satio_conv", conv);
+      r.mensajes.forEach(pintar); ponerEstado(r.estado);
+    } catch (e) {
+      conv = null; guardar("satio_conv", null);
+      aviso(e.message, "error");
+      $("btnEnviar").disabled = true;
+    }
+  }
+
+  async function cargar() {
+    if (!conv) return nueva();
+    try {
+      const r = await api({ accion: "historial", conversacion_id: conv });
+      chat.innerHTML = "";
+      r.mensajes.forEach((m) => { pintar(m); ultimoId = Math.max(ultimoId, m.id || 0); });
+      ponerCliente(r.identificado, r.nombre); ponerEstado(r.estado);
+    } catch (e) {
+      if (e.status === 404 || e.status === 400) return nueva();
+      aviso(e.message, "error");
+    }
+  }
+
+  async function refrescar() {
+    if (!conv || ocupado) return;
+    try {
+      const r = await api({ accion: "historial", conversacion_id: conv });
+      r.mensajes.filter((m) => m.id > ultimoId).forEach((m) => { if (m.rol !== "cliente") pintar(m); ultimoId = Math.max(ultimoId, m.id); });
+      ponerEstado(r.estado);
+    } catch (e) {}
+  }
+
+  async function enviar(ev) {
+    ev.preventDefault();
+    const t = texto.value.trim();
+    if ((!t && !foto) || ocupado || !conv) return;
+    ocupado = true; $("btnEnviar").disabled = true;
+    if (estado !== "escalada") aviso(null);
+    pintar({ rol: "cliente", texto: t, fotoUrl: foto && foto.url });
+    const imagen = foto ? { tipo: foto.tipo, datos: foto.datos } : undefined;
+    texto.value = ""; ajustar(); quitarFoto();
+    if (estado !== "escalada") escribiendo(true);
+    try {
+      const r = await api({ accion: "mensaje", conversacion_id: conv, texto: t, imagen });
+      escribiendo(false);
+      if (r.respuesta) pintar({ rol: "bot", texto: r.respuesta });
+      ponerEstado(r.estado);
+      await refrescarIds();
+    } catch (e) {
+      escribiendo(false);
+      aviso(e.message, "error");
+    } finally {
+      ocupado = false; $("btnEnviar").disabled = false; texto.focus();
+    }
+  }
+
+  async function refrescarIds() {
+    try {
+      const r = await api({ accion: "historial", conversacion_id: conv });
+      r.mensajes.forEach((m) => { ultimoId = Math.max(ultimoId, m.id || 0); });
+    } catch (e) {}
+  }
+
+  // Fotos: se reducen en el móvil antes de enviarlas (máx. 1280 px, JPEG)
+  function leerFoto(file) {
+    return new Promise((ok, mal) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const max = 1280, k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        const dataUrl = c.toDataURL("image/jpeg", 0.82);
+        URL.revokeObjectURL(url);
+        ok({ tipo: "image/jpeg", datos: dataUrl.split(",")[1], url: dataUrl });
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); mal(new Error("No puedo abrir esa foto.")); };
+      img.src = url;
+    });
+  }
+  function quitarFoto() { foto = null; $("previa").style.display = "none"; $("archivo").value = ""; }
+
+  function ajustar() { texto.style.height = "auto"; texto.style.height = Math.min(texto.scrollHeight, 140) + "px"; }
+
+  // Eventos
+  $("envio").addEventListener("submit", enviar);
+  texto.addEventListener("input", ajustar);
+  texto.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !matchMedia("(pointer: coarse)").matches) { e.preventDefault(); $("envio").requestSubmit(); }
+  });
+  $("btnFoto").addEventListener("click", () => $("archivo").click());
+  $("archivo").addEventListener("change", async () => {
+    const f = $("archivo").files[0]; if (!f) return;
+    try {
+      foto = await leerFoto(f);
+      $("previa").querySelector("img").src = foto.url; $("previa").style.display = "flex";
+    } catch (e) { aviso(e.message, "error"); }
+  });
+  $("quitarFoto").addEventListener("click", quitarFoto);
+  $("btnNueva").addEventListener("click", () => { if (confirm("¿Empezar una conversación nueva?")) { guardar("satio_conv", null); conv = null; nueva(); } });
+  $("btnCliente").addEventListener("click", () => { $("ident").classList.toggle("oculto"); $("tel").focus(); });
+  $("btnIdentCancelar").addEventListener("click", () => $("ident").classList.add("oculto"));
+  $("formIdent").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const telefono = $("tel").value.replace(/\D/g, ""), cp = $("cp").value.replace(/\D/g, "");
+    if (telefono.length < 9) { aviso("Escribe el teléfono completo (9 cifras).", "error"); return; }
+    if (cp.length !== 5) { aviso("El código postal tiene 5 cifras.", "error"); return; }
+    try {
+      const r = await api({ accion: "identificar", conversacion_id: conv, telefono, cp });
+      if (r.identificado) { ponerCliente(true, r.nombre); aviso(null); if (r.mensaje) pintar(r.mensaje); await refrescarIds(); }
+      else aviso(r.aviso, "error");
+    } catch (err) { aviso(err.message, "error"); }
+  });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && estado === "escalada") refrescar(); });
+
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  cargar();
+})();
+</script>
+</body>
+</html>
