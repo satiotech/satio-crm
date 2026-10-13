@@ -120,10 +120,10 @@
 <main id="chat" aria-live="polite"></main>
 
 <div id="ident" class="oculto">
-  <p>Escribe el teléfono y el código postal que diste al comprar. Así veo tu equipo y tu pedido.</p>
+  <p>Escribe el teléfono que diste al comprar y tu nombre (o el código postal). Así veo tu equipo y tu pedido.</p>
   <form id="formIdent" class="fila">
     <input id="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Teléfono" required>
-    <input id="cp" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="Código postal" required>
+    <input id="cp" autocomplete="given-name" maxlength="40" placeholder="Nombre o código postal" required>
     <button class="btn prim" type="submit">Entrar</button>
     <button class="btn" type="button" id="btnIdentCancelar">Cancelar</button>
   </form>
@@ -341,13 +341,17 @@
   $("btnIdentCancelar").addEventListener("click", () => $("ident").classList.add("oculto"));
   $("formIdent").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const telefono = $("tel").value.replace(/\D/g, ""), cp = $("cp").value.replace(/\D/g, "");
+    const telefono = $("tel").value.replace(/\D/g, ""), dato = $("cp").value.trim();
     if (telefono.length < 9) { aviso("Escribe el teléfono completo (9 cifras).", "error"); return; }
-    if (cp.length !== 5) { aviso("El código postal tiene 5 cifras.", "error"); return; }
+    const esCp = /^\d+$/.test(dato.replace(/\s/g, ""));
+    if (esCp ? dato.replace(/\D/g, "").length !== 5 : dato.length < 3 || /\s/.test(dato)) {
+      aviso(esCp ? "El código postal tiene 5 cifras." : "Escribe solo tu nombre o un apellido, sin espacios.", "error"); return;
+    }
+    const cp = esCp ? dato.replace(/\D/g, "") : dato;
     try {
       const r = await api({ accion: "identificar", conversacion_id: conv, telefono, cp });
       if (r.identificado) { ponerCliente(true, r.nombre); aviso(null); if (r.mensaje) pintar(r.mensaje); await refrescarIds(); }
-      else aviso(r.aviso, "error");
+      else aviso("No encuentro ninguna compra con esos datos. Prueba con el teléfono de la factura y tu nombre, un apellido o el código postal.", "error");
     } catch (err) { aviso(err.message, "error"); }
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && estado === "escalada") refrescar(); });
