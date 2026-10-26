@@ -84,7 +84,7 @@ tbody tr:hover{background:var(--sunk)}
 .mono{font-family:var(--mono)}
 .muted{color:var(--muted)}
 .empty{padding:40px 16px;text-align:center;color:var(--muted)}
-[data-e="Lead"]{--c:var(--lead)}[data-e="Pendiente"]{--c:var(--pend)}[data-e="Enviado"]{--c:var(--env)}[data-e="Entregado"]{--c:var(--entr)}[data-e="Instalado"]{--c:var(--inst)}[data-e="Devuelto"]{--c:var(--dev)}
+[data-e="Lead"]{--c:var(--lead)}[data-e="Pendiente"]{--c:var(--pend)}[data-e="Enviado"]{--c:var(--env)}[data-e="Entregado"]{--c:var(--entr)}[data-e="Instalado"]{--c:var(--inst)}[data-e="Devuelto"]{--c:var(--dev)}[data-e="Anulada"]{--c:var(--dev)}
 /* ficha */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10}
 aside.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:11;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 18px calc(24px + env(safe-area-inset-bottom,0px))}
@@ -177,7 +177,8 @@ aside.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);backgro
 
 <script>
 
-const ESTADOS=["Lead","Pendiente","Enviado","Entregado","Instalado","Devuelto"];
+const ESTADOS=["Lead","Pendiente","Enviado","Entregado","Instalado","Devuelto","Anulada"];
+const cuenta=v=>!["Lead","Devuelto","Anulada"].includes(v.estado);
 const IVA=1.21;
 const neto=v=>(Number(v.precio)||0)/IVA;
 const pieza=v=>v.diametro||v.dientes?`Ø${v.diametro||"?"} · ${v.dientes||"?"} dientes`:"";
@@ -187,7 +188,7 @@ const facs=v=>Array.isArray(v.facturas)?v.facturas:(v.factura?[{numero:v.factura
 const envs=v=>Array.isArray(v.envios)?v.envios:(v.seguimiento?[{tracking:v.seguimiento}]:[]);
 const trackUrl=e=>e.url||(e.tracking?"https://www.correos.es/es/es/herramientas/localizador/envios/detalle?tracking-number="+encodeURIComponent(e.tracking):"");
 const renoveMes=f=>["06","07"].includes((f||"").slice(5,7));
-const SUB={Lead:"Interesados",Pendiente:"De envío o montaje",Enviado:"En camino",Entregado:"Falta instalar",Instalado:"Terminado",Devuelto:""};
+const SUB={Lead:"Interesados",Pendiente:"De envío o montaje",Enviado:"En camino",Entregado:"Falta instalar",Instalado:"Terminado",Devuelto:"",Anulada:"No cuenta en totales"};
 const MARCAS=["John Deere","New Holland","Massey Ferguson","Deutz","Case IH","Claas","Fendt","Kubota","Landini","Lamborghini","Valtra","Fiat","Renault"];
 let db=null, ventas=[], tab="tablero", abierta=null;
 const $=s=>document.querySelector(s);
@@ -203,7 +204,7 @@ function filtradas(){
 }
 
 function kpis(){
-  const act=ventas.filter(v=>v.estado!=="Lead"&&v.estado!=="Devuelto");
+  const act=ventas.filter(cuenta);
   const mes=hoy().slice(0,7);
   const delMes=act.filter(v=>(v.fecha||"").startsWith(mes));
   const pend=act.reduce((a,v)=>a+Math.max(0,Number(v.pendiente)||0),0);
@@ -238,7 +239,7 @@ function render(){
   if(tab==="tablero"){
     const corte=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
     const ocultar=$("#fOcultarInst").checked;
-    const cols=ESTADOS.filter(e=>e!=="Devuelto"||list.some(v=>v.estado==="Devuelto"));
+    const cols=ESTADOS.filter(e=>!["Devuelto","Anulada"].includes(e)||list.some(v=>v.estado===e));
     const pp={};list.filter(v=>v.estado==="Pendiente").forEach(v=>{const k=pieza(v)||"Sin medidas";pp[k]=(pp[k]||0)+1});
     const piezas=Object.entries(pp).sort((a,b)=>b[1]-a[1]);
     const mts=list.filter(v=>esMontaje(v)&&v.estado==="Pendiente").sort((a,b)=>(a.montajeFecha||"9999").localeCompare(b.montajeFecha||"9999"));
@@ -253,12 +254,12 @@ function render(){
     const vs=list.filter(v=>v.estado!=="Lead").sort((a,b)=>b.num-a.num);
     el.innerHTML=`<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Fecha</th><th>Cliente</th><th>Pueblo</th><th>Provincia</th><th>Tractor</th><th>Estado</th><th>Entrega</th><th>Renove</th><th>Pieza</th><th class="num">Precio (IVA)</th><th class="num">Sin IVA</th><th class="num">Pendiente</th><th>Canal</th><th>Facturas</th><th>Tracking</th></tr></thead><tbody>${vs.map(v=>`<tr tabindex="0" data-id="${esc(v._id)}"><td class="num">${v.num}</td><td class="mono">${fmtF(v.fecha)}</td><td>${esc(v.nombre)}</td><td>${esc(v.ciudad)}</td><td>${esc(v.provincia)}</td><td>${esc([v.marca,v.modelo].filter(Boolean).join(" "))}</td><td><span class="pill" data-e="${esc(v.estado)}">${esc(v.estado)}</span></td><td>${esc(entregaTxt(v))}</td><td>${v.renove?"Sí "+esc(v.renoveCampana||""):"No"}</td><td class="mono">${esc(pieza(v))||"—"}</td><td class="num">${eur(v.precio)}</td><td class="num">${eur(Math.round(neto(v)*100)/100)}</td><td class="num" style="${v.pendiente>0?"color:var(--pend)":""}">${v.pendiente>0?eur(v.pendiente):"—"}</td><td>${esc(v.canal)}</td><td class="mono">${esc(facs(v).map(f=>f.numero).join(", "))}</td><td class="mono">${envs(v).map(e=>trackUrl(e)?`<a href="${esc(trackUrl(e))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(e.tracking||e.localizador)}</a>`:esc(e.localizador)).join(", ")}</td></tr>`).join("")}</tbody></table></div><p class="muted">${vs.length} ventas</p>`;
   }else if(tab==="cobros"){
-    const vs=list.filter(v=>v.pendiente>0&&v.estado!=="Lead"&&v.estado!=="Devuelto").sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));
+    const vs=list.filter(v=>v.pendiente>0&&cuenta(v)).sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));
     const tot=vs.reduce((a,v)=>a+v.pendiente,0);
     el.innerHTML=vs.length?`<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Fecha</th><th>Cliente</th><th>Teléfono</th><th>Estado</th><th>Tipo</th><th class="num">Precio</th><th class="num">Pagado</th><th class="num">Pendiente</th><th class="num">Días</th></tr></thead><tbody>${vs.map(v=>{const d=v.fecha?Math.round((Date.now()-new Date(v.fecha))/864e5):"";return `<tr tabindex="0" data-id="${esc(v._id)}"><td class="num">${v.num}</td><td class="mono">${fmtF(v.fecha)}</td><td>${esc(v.nombre)}</td><td class="mono">${esc(v.telefono)||"—"}</td><td><span class="pill" data-e="${esc(v.estado)}">${esc(v.estado)}</span></td><td>${esMontaje(v)?"Montaje":"Envío"}${v.renove?" · Renove":""}</td><td class="num">${eur(v.precio)}</td><td class="num">${eur(v.pagado)}</td><td class="num" style="color:var(--pend);font-weight:600">${eur(v.pendiente)}</td><td class="num">${d}</td></tr>`}).join("")}</tbody></table></div><p><b>${eur(tot)}</b> pendientes en ${vs.length} ventas.</p>`:`<div class="empty">No hay nada pendiente de cobro con estos filtros.</div>`;
   }else if(tab==="clientes"){
     const g=new Map();
-    list.filter(v=>v.estado!=="Lead").forEach(v=>{const k=(v.telefono||(v.nombre+"|"+v.ciudad)).toLowerCase();if(!g.has(k))g.set(k,[]);g.get(k).push(v)});
+    list.filter(v=>v.estado!=="Lead"&&v.estado!=="Anulada").forEach(v=>{const k=(v.telefono||(v.nombre+"|"+v.ciudad)).toLowerCase();if(!g.has(k))g.set(k,[]);g.get(k).push(v)});
     const cs=[...g.values()].map(vs=>({v:vs.sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""))[0],n:vs.length,tot:vs.reduce((a,x)=>a+neto(x),0),pend:vs.reduce((a,x)=>a+(x.pendiente||0),0)})).sort((a,b)=>b.n-a.n||(b.v.fecha||"").localeCompare(a.v.fecha||""));
     el.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Pueblo</th><th>Provincia</th><th class="num">Equipos</th><th class="num">Revenue sin IVA</th><th class="num">Pendiente</th><th>Última compra</th><th>Canal</th></tr></thead><tbody>${cs.map(c=>`<tr tabindex="0" data-id="${esc(c.v._id)}"><td>${esc(c.v.nombre)}</td><td class="mono">${esc(c.v.telefono)||"—"}</td><td>${esc(c.v.ciudad)}</td><td>${esc(c.v.provincia)}</td><td class="num">${c.n}</td><td class="num">${eur(Math.round(c.tot))}</td><td class="num">${c.pend>0?eur(c.pend):"—"}</td><td class="mono">${fmtF(c.v.fecha)}</td><td>${esc(c.v.canal)}</td></tr>`).join("")}</tbody></table></div><p class="muted">${cs.length} clientes (agrupados por teléfono, o por nombre y pueblo si no hay teléfono)</p>`;
   }else if(tab==="leads"){
@@ -266,7 +267,7 @@ function render(){
     const ult=v=>{const h=v.historial||[];return h.length?h[h.length-1]:null};
     el.innerHTML=vs.length?`<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Fecha</th><th>Nombre</th><th>Teléfono</th><th>Pueblo</th><th>Provincia</th><th>Tractor</th><th>Canal</th><th>Último contacto</th><th class="num">Días</th></tr></thead><tbody>${vs.map(v=>{const u=ult(v);const ref=u?.fecha||v.fecha;const d=ref?Math.round((Date.now()-new Date(ref))/864e5):"";return `<tr tabindex="0" data-id="${esc(v._id)}"><td class="num">${v.num}</td><td class="mono">${fmtF(v.fecha)}</td><td>${esc(v.nombre)}</td><td class="mono">${v.telefono?`<a href="https://wa.me/34${esc(v.telefono)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(v.telefono)}</a>`:"—"}</td><td>${esc(v.ciudad)}</td><td>${esc(v.provincia)}</td><td>${esc([v.marca,v.modelo].filter(Boolean).join(" "))||"—"}</td><td>${esc(v.canal||(v.origen==="whatsapp"?"WhatsApp":""))}</td><td style="white-space:normal;min-width:220px">${u?`<span class="muted mono">${fmtF(u.fecha)}</span> ${esc(u.texto)}`:"—"}</td><td class="num">${d}</td></tr>`}).join("")}</tbody></table></div><p class="muted">${vs.length} leads · abre uno y pulsa “Pasar a venta” cuando compre</p>`:`<div class="empty">No hay leads con estos filtros. Pulsa “+ Lead” para añadir uno.</div>`;
   }else{
-    const act=list.filter(v=>v.estado!=="Lead"&&v.estado!=="Devuelto");
+    const act=list.filter(cuenta);
     const bloque=(t,key)=>{const c={};act.forEach(v=>{const k=key(v)||"Sin dato";c[k]=(c[k]||0)+1});const arr=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10);const mx=arr[0]?.[1]||1;return `<div class="bars"><h4>${t}</h4>${arr.map(([k,n])=>`<div class="bar"><span>${esc(k)}</span><div><span style="width:${n/mx*100}%"></span></div><em>${n}</em></div>`).join("")}</div>`};
     const rm={};act.forEach(v=>{const k=(v.fecha||"").slice(0,7)||"Sin fecha";rm[k]=(rm[k]||0)+neto(v)});
     const rma=Object.entries(rm).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12);const rmx=Math.max(1,...rma.map(x=>x[1]));
